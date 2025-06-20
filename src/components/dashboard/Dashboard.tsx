@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -6,8 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CourseCard } from './CourseCard';
 import { UserProfile } from './UserProfile';
+import { NotificationCenter } from '../notifications/NotificationCenter';
+import { ForumInterface } from '../forum/ForumInterface';
+import { Leaderboard } from '../gamification/Leaderboard';
 import { 
   BookOpen, 
   Users, 
@@ -16,7 +19,10 @@ import {
   LogOut,
   Star,
   Clock,
-  Target
+  Target,
+  MessageSquare,
+  Award,
+  Globe
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -43,6 +49,8 @@ export const Dashboard = ({ user }: { user: User }) => {
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState('courses');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -137,8 +145,14 @@ export const Dashboard = ({ user }: { user: User }) => {
               <h1 className="text-2xl font-bold text-gray-900">WL - We Learn</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowNotifications(true)}
+                className="relative"
+              >
                 <Bell className="h-4 w-4" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
               </Button>
               <UserProfile user={user} profile={profile} />
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -161,7 +175,7 @@ export const Dashboard = ({ user }: { user: User }) => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cours Complétés</CardTitle>
@@ -190,87 +204,215 @@ export const Dashboard = ({ user }: { user: User }) => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Niveau</CardTitle>
+              <CardTitle className="text-sm font-medium">Points Gagnés</CardTitle>
+              <Star className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1,890</div>
+              <p className="text-xs text-muted-foreground">
+                +150 cette semaine
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Classement</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold capitalize">
-                {profile?.school_level || 'Débutant'}
-              </div>
+              <div className="text-2xl font-bold">#8</div>
               <p className="text-xs text-muted-foreground">
-                Continuez à apprendre !
+                Dans votre école
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Courses Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold text-gray-900">Cours Disponibles</h3>
-            <div className="flex space-x-2">
-              <Badge variant="secondary">Finance</Badge>
-              <Badge variant="secondary">Technologie</Badge>
-            </div>
-          </div>
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="courses" className="flex items-center space-x-2">
+              <BookOpen className="h-4 w-4" />
+              <span>Cours</span>
+            </TabsTrigger>
+            <TabsTrigger value="forum" className="flex items-center space-x-2">
+              <MessageSquare className="h-4 w-4" />
+              <span>Forum</span>
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="flex items-center space-x-2">
+              <Trophy className="h-4 w-4" />
+              <span>Classement</span>
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="flex items-center space-x-2">
+              <Award className="h-4 w-4" />
+              <span>Badges</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                progress={getProgressForCourse(course.id)}
-                onEnroll={() => {
-                  toast({
-                    title: "Cours ajouté !",
-                    description: `Vous avez rejoint le cours: ${course.title}`,
-                  });
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                Rejoindre une Classe
-              </CardTitle>
-              <CardDescription>
-                Entrez le code de classe pour rejoindre une classe virtuelle
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <TabsContent value="courses" className="space-y-6">
+            {/* Course Categories */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-gray-900">Cours Disponibles</h3>
               <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Code de classe"
-                  className="flex-1 px-3 py-2 border rounded-md"
-                />
-                <Button>Rejoindre</Button>
+                <Badge variant="secondary">Finance</Badge>
+                <Badge variant="secondary">Technologie</Badge>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Star className="h-5 w-5 mr-2" />
-                Défis du Jour
-              </CardTitle>
-              <CardDescription>
-                Participez aux défis quotidiens pour gagner des points
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full">Voir les Défis</Button>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  progress={getProgressForCourse(course.id)}
+                  onEnroll={() => {
+                    toast({
+                      title: "Cours ajouté !",
+                      description: `Vous avez rejoint le cours: ${course.title}`,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Rejoindre une Classe
+                  </CardTitle>
+                  <CardDescription>
+                    Entrez le code de classe pour rejoindre une classe virtuelle
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Code de classe"
+                      className="flex-1 px-3 py-2 border rounded-md"
+                    />
+                    <Button>Rejoindre</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Star className="h-5 w-5 mr-2" />
+                    Défis du Jour
+                  </CardTitle>
+                  <CardDescription>
+                    Participez aux défis quotidiens pour gagner des points
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full">Voir les Défis</Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="forum">
+            <ForumInterface user={user} />
+          </TabsContent>
+
+          <TabsContent value="leaderboard">
+            <div className="space-y-6">
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm">
+                  <Globe className="h-4 w-4 mr-2" />
+                  Global
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Users className="h-4 w-4 mr-2" />
+                  Mon École
+                </Button>
+              </div>
+              <Leaderboard userId={user.id} scope="global" />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="achievements">
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-gray-900">Mes Badges et Réalisations</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardContent className="p-6 text-center">
+                    <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                    <h3 className="font-bold mb-2">Premier Cours Terminé</h3>
+                    <p className="text-sm text-gray-600">Félicitations pour avoir terminé votre premier cours !</p>
+                    <Badge className="mt-3">Débloqué</Badge>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-6 text-center">
+                    <Star className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                    <h3 className="font-bold mb-2">Quiz Master</h3>
+                    <p className="text-sm text-gray-600">Obtenez 100% à 5 quiz consécutifs</p>
+                    <Progress value={60} className="mt-3" />
+                    <p className="text-xs text-gray-500 mt-1">3/5 quiz réussis</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-6 text-center">
+                    <Award className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <h3 className="font-bold mb-2">Régularité</h3>
+                    <p className="text-sm text-gray-600">Étudiez 7 jours consécutifs</p>
+                    <Progress value={85} className="mt-3" />
+                    <p className="text-xs text-gray-500 mt-1">6/7 jours</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Prochains Badges à Débloquer</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Users className="h-8 w-8 text-gray-400" />
+                        <div>
+                          <h4 className="font-medium">Mentor Communautaire</h4>
+                          <p className="text-sm text-gray-600">Aidez 10 personnes sur le forum</p>
+                        </div>
+                      </div>
+                      <Progress value={30} className="w-24" />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Trophy className="h-8 w-8 text-gray-400" />
+                        <div>
+                          <h4 className="font-medium">Expert Finance</h4>
+                          <p className="text-sm text-gray-600">Terminez tous les cours de finance</p>
+                        </div>
+                      </div>
+                      <Progress value={75} className="w-24" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Notification Center */}
+      <NotificationCenter 
+        user={user} 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
     </div>
   );
 };
