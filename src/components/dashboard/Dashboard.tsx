@@ -44,7 +44,12 @@ interface UserProgress {
   time_spent_minutes: number;
 }
 
-export const Dashboard = ({ user }: { user: User }) => {
+interface DashboardProps {
+  user: User;
+  onCourseSelect?: (courseId: string) => void;
+}
+
+export const Dashboard = ({ user, onCourseSelect }: DashboardProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
   const [profile, setProfile] = useState<any>(null);
@@ -134,6 +139,9 @@ export const Dashboard = ({ user }: { user: User }) => {
     );
   }
 
+  // Get the display name, showing the full_name if available
+  const displayName = profile?.full_name || user.email?.split('@')[0] || 'Utilisateur';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -141,8 +149,12 @@ export const Dashboard = ({ user }: { user: User }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <BookOpen className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">WL - We Learn</h1>
+              <img 
+                src="/lovable-uploads/8aff2116-7caa-4844-ab1a-8bb8c8474859.png" 
+                alt="We Learn Logo" 
+                className="h-10 w-10 mr-3"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">We Learn</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Button 
@@ -167,7 +179,7 @@ export const Dashboard = ({ user }: { user: User }) => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Bienvenue, {profile?.full_name || user.email}! 👋
+            Bienvenue, {displayName}! 👋
           </h2>
           <p className="text-gray-600">
             Continuez votre parcours d'apprentissage et découvrez de nouveaux cours.
@@ -267,10 +279,14 @@ export const Dashboard = ({ user }: { user: User }) => {
                   course={course}
                   progress={getProgressForCourse(course.id)}
                   onEnroll={() => {
-                    toast({
-                      title: "Cours ajouté !",
-                      description: `Vous avez rejoint le cours: ${course.title}`,
-                    });
+                    if (onCourseSelect) {
+                      onCourseSelect(course.id);
+                    } else {
+                      toast({
+                        title: "Cours sélectionné !",
+                        description: `Ouverture du cours: ${course.title}`,
+                      });
+                    }
                   }}
                 />
               ))}

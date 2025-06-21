@@ -83,7 +83,7 @@ export const AuthForm = () => {
       } else {
         toast({
           title: "Connexion réussie !",
-          description: "Bienvenue sur WL (We Learn) 🎉",
+          description: "Bienvenue sur We Learn 🎉",
         });
       }
     } catch (error) {
@@ -94,14 +94,18 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <GraduationCap className="h-12 w-12 text-blue-600" />
+            <img 
+              src="/lovable-uploads/8aff2116-7caa-4844-ab1a-8bb8c8474859.png" 
+              alt="We Learn Logo" 
+              className="h-16 w-16"
+            />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            WL - We Learn
+            We Learn
           </CardTitle>
           <CardDescription>
             {isSignUp ? 'Créer votre compte' : 'Connectez-vous à votre compte'}
@@ -205,8 +209,7 @@ export const AuthForm = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="wo">Wolof</SelectItem>
-                      <SelectItem value="bm">Bambara</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -215,7 +218,7 @@ export const AuthForm = () => {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-green-600 hover:bg-green-700"
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -226,7 +229,7 @@ export const AuthForm = () => {
           <div className="mt-4 text-center">
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-green-600 hover:underline"
             >
               {isSignUp 
                 ? 'Déjà un compte ? Se connecter' 
