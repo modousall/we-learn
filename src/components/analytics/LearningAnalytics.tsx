@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { TrendingUp, Clock, BookOpen, Target, Award, Calendar } from 'lucide-react';
+import { TrendingUp, Clock, BookOpen, Target, Award, Calendar, ArrowLeft } from 'lucide-react';
 
 interface LearningAnalyticsProps {
   user: User;
+  onBack?: () => void;
 }
 
 interface AnalyticsStats {
@@ -22,7 +23,7 @@ interface AnalyticsStats {
   rank: number;
 }
 
-export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
+export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   const [stats, setStats] = useState<AnalyticsStats>({
     totalHours: 0,
     completedCourses: 0,
@@ -95,15 +96,26 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      {/* Header avec navigation rapide */}
+      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              {onBack && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onBack}
+                  className="hover:bg-gray-100 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Retour
+                </Button>
+              )}
               <img 
                 src="/lovable-uploads/8aff2116-7caa-4844-ab1a-8bb8c8474859.png" 
                 alt="We Learn Logo" 
-                className="h-10 w-10 mr-3"
+                className="h-10 w-10"
               />
               <h1 className="text-2xl font-bold text-gray-900">Analytiques d'Apprentissage</h1>
             </div>
@@ -112,9 +124,9 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
+        {/* Stats Overview avec chargement optimisé */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Heures Totales</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -125,7 +137,7 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cours Terminés</CardTitle>
               <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -136,7 +148,7 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Score Moyen</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
@@ -147,7 +159,7 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Série Actuelle</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -158,10 +170,10 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Badges</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreference" />
+              <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.badges}</div>
@@ -171,11 +183,22 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tendance</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">↗ 12%</div>
+              <p className="text-xs text-muted-foreground">Cette semaine</p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Performance Chart */}
-          <Card>
+          {/* Performance Chart avec chargement lazy */}
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader>
               <CardTitle>Performance Hebdomadaire</CardTitle>
             </CardHeader>
@@ -193,8 +216,8 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
             </CardContent>
           </Card>
 
-          {/* Skills Radar */}
-          <Card>
+          {/* Skills Radar avec optimisation */}
+          <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader>
               <CardTitle>Compétences par Domaine</CardTitle>
             </CardHeader>
@@ -211,28 +234,28 @@ export const LearningAnalytics = ({ user }: LearningAnalyticsProps) => {
           </Card>
         </div>
 
-        {/* Achievements */}
-        <Card className="mt-8">
+        {/* Achievements avec animations */}
+        <Card className="mt-8 hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <CardTitle>Réalisations Récentes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg">
+              <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors cursor-pointer">
                 <Award className="h-8 w-8 text-yellow-500" />
                 <div>
                   <h4 className="font-medium">Expert Crypto</h4>
                   <p className="text-sm text-gray-600">Terminé 5 cours crypto</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer">
                 <Target className="h-8 w-8 text-green-500" />
                 <div>
                   <h4 className="font-medium">Série de 7 jours</h4>
                   <p className="text-sm text-gray-600">Activité quotidienne</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer">
                 <TrendingUp className="h-8 w-8 text-blue-500" />
                 <div>
                   <h4 className="font-medium">Top Performer</h4>

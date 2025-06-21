@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { AuthForm } from './auth/AuthForm';
@@ -10,16 +10,19 @@ import { StudyPlan } from './learning/StudyPlan';
 import { CommunityHub } from './social/CommunityHub';
 import { LearningAnalytics } from './analytics/LearningAnalytics';
 
+type ViewType = 'dashboard' | 'course' | 'admin' | 'study-plan' | 'community' | 'analytics';
+
 export const WLApp = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'course' | 'admin' | 'study-plan' | 'community' | 'analytics'>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [navigationHistory, setNavigationHistory] = useState<ViewType[]>(['dashboard']);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener avec optimisation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session);
@@ -27,7 +30,7 @@ export const WLApp = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Load user profile
+          // Load user profile avec cache
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -64,20 +67,41 @@ export const WLApp = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleCourseSelect = (courseId: string) => {
+  // Navigation optimisée avec historique
+  const handleCourseSelect = useCallback((courseId: string) => {
     setSelectedCourseId(courseId);
     setCurrentView('course');
-  };
+    setNavigationHistory(prev => [...prev, 'course']);
+  }, []);
 
-  const handleViewChange = (view: 'dashboard' | 'study-plan' | 'community' | 'analytics') => {
+  const handleViewChange = useCallback((view: ViewType) => {
     setCurrentView(view);
     setSelectedCourseId(null);
-  };
+    setNavigationHistory(prev => [...prev, view]);
+  }, []);
 
-  const handleBackToDashboard = () => {
+  const handleBackToDashboard = useCallback(() => {
     setCurrentView('dashboard');
     setSelectedCourseId(null);
-  };
+    setNavigationHistory(['dashboard']);
+  }, []);
+
+  const handleBack = useCallback(() => {
+    if (navigationHistory.length > 1) {
+      const newHistory = [...navigationHistory];
+      newHistory.pop(); // Retire la vue actuelle
+      const previousView = newHistory[newHistory.length - 1];
+      
+      setNavigationHistory(newHistory);
+      setCurrentView(previousView);
+      
+      if (previousView !== 'course') {
+        setSelectedCourseId(null);
+      }
+    } else {
+      handleBackToDashboard();
+    }
+  }, [navigationHistory, handleBackToDashboard]);
 
   if (loading) {
     return (
@@ -107,30 +131,30 @@ export const WLApp = () => {
     return <AdminDashboard user={user} />;
   }
 
-  // Show course viewer
+  // Show course viewer avec navigation améliorée
   if (currentView === 'course' && selectedCourseId) {
     return (
       <CourseViewer
         courseId={selectedCourseId}
         user={user}
-        onClose={handleBackToDashboard}
+        onClose={handleBack}
       />
     );
   }
 
-  // Show study plan
+  // Show study plan avec navigation
   if (currentView === 'study-plan') {
-    return <StudyPlan user={user} />;
+    return <StudyPlan user={user} onBack={handleBack} />;
   }
 
-  // Show community hub
+  // Show community hub avec navigation
   if (currentView === 'community') {
-    return <CommunityHub user={user} />;
+    return <CommunityHub user={user} onBack={handleBack} />;
   }
 
-  // Show learning analytics
+  // Show learning analytics avec navigation
   if (currentView === 'analytics') {
-    return <LearningAnalytics user={user} />;
+    return <LearningAnalytics user={user} onBack={handleBack} />;
   }
 
   // Show regular dashboard

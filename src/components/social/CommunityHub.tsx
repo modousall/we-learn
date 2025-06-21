@@ -1,159 +1,64 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Users, 
-  MessageCircle, 
-  Heart, 
-  Share2, 
-  TrendingUp,
-  Calendar,
-  MapPin,
-  Star,
-  BookOpen,
-  Trophy
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-interface CommunityPost {
-  id: string;
-  author: {
-    name: string;
-    avatar?: string;
-    level: string;
-    points: number;
-  };
-  content: string;
-  category: string;
-  likes: number;
-  comments: number;
-  timestamp: string;
-  tags: string[];
-  isLiked: boolean;
-}
-
-interface StudyGroup {
-  id: string;
-  name: string;
-  description: string;
-  members: number;
-  category: string;
-  next_session: string;
-  location: 'online' | 'offline';
-  difficulty: 'débutant' | 'intermédiaire' | 'avancé';
-}
+import { MessageSquare, Users, Calendar, ThumbsUp, Share2, Plus, ArrowLeft, Search } from 'lucide-react';
 
 interface CommunityHubProps {
   user: User;
+  onBack?: () => void;
 }
 
-export const CommunityHub = ({ user }: CommunityHubProps) => {
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
+export const CommunityHub = ({ user, onBack }: CommunityHubProps) =>  {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newPost, setNewPost] = useState('');
-  const { toast } = useToast();
 
   useEffect(() => {
     loadCommunityData();
-  }, []);
+  }, [user]);
 
   const loadCommunityData = async () => {
     try {
-      // Mock data for community posts
-      const mockPosts: CommunityPost[] = [
+      // Mock data pour la démonstration
+      setPosts([
         {
-          id: '1',
-          author: {
-            name: 'Amina Diallo',
-            avatar: '/api/placeholder/40/40',
-            level: 'Expert Crypto',
-            points: 2450
-          },
-          content: 'Viens de terminer le module sur les DeFi ! Quelqu\'un d\'autre a trouvé la partie sur les pools de liquidité difficile ? 🤔',
-          category: 'Blockchain',
-          likes: 23,
+          id: 1,
+          author: 'Marie Diop',
+          avatar: '/api/placeholder/40/40',
+          content: 'Quelqu\'un peut-il m\'expliquer la différence entre Bitcoin et Ethereum ?',
+          likes: 12,
+          comments: 5,
+          time: '2h',
+          category: 'Question'
+        },
+        {
+          id: 2,
+          author: 'Amadou Tall',
+          avatar: '/api/placeholder/40/40',
+          content: 'Super cours sur la DeFi ! J\'ai enfin compris les yield farms 🚀',
+          likes: 28,
           comments: 8,
-          timestamp: '2h',
-          tags: ['DeFi', 'Apprentissage'],
-          isLiked: false
-        },
-        {
-          id: '2',
-          author: {
-            name: 'Ibrahim Kone',
-            avatar: '/api/placeholder/40/40',
-            level: 'Maître Finance',
-            points: 3200
-          },
-          content: 'Excellente explication sur la budgétisation dans le dernier cours ! J\'ai enfin compris comment équilibrer mon budget mensuel 💡',
-          category: 'Finance',
-          likes: 34,
-          comments: 12,
-          timestamp: '4h',
-          tags: ['Budget', 'Conseil'],
-          isLiked: true
-        },
-        {
-          id: '3',
-          author: {
-            name: 'Fatima Ba',
-            avatar: '/api/placeholder/40/40',
-            level: 'Apprentie IA',
-            points: 1200
-          },
-          content: 'Qui veut former un groupe d\'étude pour le prochain module sur l\'apprentissage automatique ? 🤖',
-          category: 'IA',
-          likes: 15,
-          comments: 6,
-          timestamp: '6h',
-          tags: ['Groupe', 'IA', 'Étude'],
-          isLiked: false
+          time: '4h',
+          category: 'Partage'
         }
-      ];
+      ]);
 
-      const mockStudyGroups: StudyGroup[] = [
-        {
-          id: '1',
-          name: 'Crypto Débutants',
-          description: 'Apprenons ensemble les bases de la blockchain et des cryptomonnaies',
-          members: 24,
-          category: 'Blockchain',
-          next_session: '2024-01-25T18:00:00',
-          location: 'online',
-          difficulty: 'débutant'
-        },
-        {
-          id: '2',
-          name: 'Finance Avancée',
-          description: 'Discussions sur l\'investissement et la planification financière',
-          members: 18,
-          category: 'Finance',
-          next_session: '2024-01-24T20:00:00',
-          location: 'offline',
-          difficulty: 'avancé'
-        },
-        {
-          id: '3',
-          name: 'IA et Futur',
-          description: 'Explorons l\'impact de l\'IA sur l\'économie africaine',
-          members: 32,
-          category: 'IA',
-          next_session: '2024-01-26T19:00:00',
-          location: 'online',
-          difficulty: 'intermédiaire'
-        }
-      ];
+      setGroups([
+        { id: 1, name: 'Crypto Débutants', members: 156, description: 'Pour ceux qui découvrent les cryptomonnaies' },
+        { id: 2, name: 'Trading Avancé', members: 89, description: 'Stratégies et analyses techniques' },
+        { id: 3, name: 'DeFi & NFTs', members: 203, description: 'Finance décentralisée et tokens non-fongibles' }
+      ]);
 
-      setPosts(mockPosts);
-      setStudyGroups(mockStudyGroups);
+      setEvents([
+        { id: 1, title: 'Webinar Bitcoin', date: '25 Jan', time: '19h00', participants: 45 },
+        { id: 2, title: 'Atelier Trading', date: '28 Jan', time: '15h00', participants: 23 }
+      ]);
     } catch (error) {
       console.error('Error loading community data:', error);
     } finally {
@@ -161,243 +66,169 @@ export const CommunityHub = ({ user }: CommunityHubProps) => {
     }
   };
 
-  const handleLike = (postId: string) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { 
-            ...post, 
-            isLiked: !post.isLiked,
-            likes: post.isLiked ? post.likes - 1 : post.likes + 1
-          }
-        : post
-    ));
-  };
-
-  const handleCreatePost = () => {
-    if (!newPost.trim()) return;
-    
-    toast({
-      title: "Publication créée !",
-      description: "Votre message a été partagé avec la communauté",
-    });
-    
-    setNewPost('');
-  };
-
-  const joinStudyGroup = (groupId: string) => {
-    toast({
-      title: "Groupe rejoint !",
-      description: "Vous avez rejoint le groupe d'étude avec succès",
-    });
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center py-8 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-xl">
-        <h1 className="text-4xl font-bold mb-2">Hub Communautaire</h1>
-        <p className="text-xl opacity-90">Connectez-vous, apprenez et grandissez ensemble</p>
-        <div className="flex justify-center space-x-8 mt-6">
-          <div className="text-center">
-            <p className="text-2xl font-bold">2,847</p>
-            <p className="text-sm opacity-80">Membres actifs</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">156</p>
-            <p className="text-sm opacity-80">Discussions</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">42</p>
-            <p className="text-sm opacity-80">Groupes d'étude</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header avec navigation optimisée */}
+      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-4">
+              {onBack && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onBack}
+                  className="hover:bg-gray-100 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Retour
+                </Button>
+              )}
+              <img 
+                src="/lovable-uploads/8aff2116-7caa-4844-ab1a-8bb8c8474859.png" 
+                alt="We Learn Logo" 
+                className="h-10 w-10"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Hub Communautaire</h1>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" size="sm">
+                <Search className="h-4 w-4 mr-2" />
+                Rechercher
+              </Button>
+              <Button className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau Post
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <Tabs defaultValue="feed" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="feed" className="flex items-center space-x-2">
-            <MessageCircle className="h-4 w-4" />
-            <span>Fil d'actualité</span>
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="flex items-center space-x-2">
-            <Users className="h-4 w-4" />
-            <span>Groupes d'étude</span>
-          </TabsTrigger>
-          <TabsTrigger value="events" className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4" />
-            <span>Événements</span>
-          </TabsTrigger>
-        </TabsList>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs defaultValue="feed" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-white p-1 shadow-lg rounded-xl">
+            <TabsTrigger 
+              value="feed" 
+              className="flex items-center space-x-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white transition-all"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span>Fil d'Actualité</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="groups" 
+              className="flex items-center space-x-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white transition-all"
+            >
+              <Users className="h-4 w-4" />
+              <span>Groupes</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="events" 
+              className="flex items-center space-x-2 data-[state=active]:bg-green-500 data-[state=active]:text-white transition-all"
+            >
+              <Calendar className="h-4 w-4" />
+              <span>Événements</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="feed" className="space-y-6">
-          {/* Create Post */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex space-x-4">
-                <Avatar>
-                  <AvatarFallback>
-                    {user.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-3">
-                  <Input
-                    placeholder="Partagez vos réflexions avec la communauté..."
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    className="text-lg"
-                  />
-                  <div className="flex justify-between items-center">
-                    <div className="flex space-x-2">
-                      <Badge variant="outline">Finance</Badge>
-                      <Badge variant="outline">Blockchain</Badge>
-                      <Badge variant="outline">IA</Badge>
-                    </div>
-                    <Button onClick={handleCreatePost} disabled={!newPost.trim()}>
-                      Publier
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Posts Feed */}
-          <div className="space-y-4">
+          <TabsContent value="feed" className="space-y-6">
             {posts.map((post) => (
-              <Card key={post.id}>
+              <Card key={post.id} className="hover:shadow-lg transition-shadow duration-200">
                 <CardContent className="p-6">
-                  <div className="flex space-x-4">
+                  <div className="flex items-start space-x-4">
                     <Avatar>
-                      <AvatarImage src={post.author.avatar} />
-                      <AvatarFallback>
-                        {post.author.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
+                      <AvatarImage src={post.avatar} />
+                      <AvatarFallback>{post.author.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-semibold">{post.author.name}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {post.author.level}
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold">{post.author}</h4>
+                          <p className="text-sm text-gray-500">{post.time}</p>
+                        </div>
+                        <Badge variant={post.category === 'Question' ? 'secondary' : 'default'}>
+                          {post.category}
                         </Badge>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Star className="h-3 w-3 mr-1" />
-                          {post.author.points} pts
-                        </div>
-                        <span className="text-gray-500 text-sm">• {post.timestamp}</span>
                       </div>
-                      
-                      <p className="text-gray-700 mb-3">{post.content}</p>
-                      
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Badge variant="secondary">{post.category}</Badge>
-                        {post.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            #{tag}
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-3 border-t">
-                        <div className="flex space-x-4">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleLike(post.id)}
-                            className={post.isLiked ? 'text-red-500' : ''}
-                          >
-                            <Heart className={`h-4 w-4 mr-1 ${post.isLiked ? 'fill-current' : ''}`} />
-                            {post.likes}
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            {post.comments}
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Share2 className="h-4 w-4 mr-1" />
-                            Partager
-                          </Button>
-                        </div>
+                      <p className="mb-4">{post.content}</p>
+                      <div className="flex items-center space-x-4">
+                        <Button variant="ghost" size="sm" className="hover:bg-red-50 hover:text-red-600 transition-colors">
+                          <ThumbsUp className="h-4 w-4 mr-1" />
+                          {post.likes}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          {post.comments}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="hover:bg-green-50 hover:text-green-600 transition-colors">
+                          <Share2 className="h-4 w-4 mr-1" />
+                          Partager
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent value="groups" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {studyGroups.map((group) => (
-              <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{group.name}</CardTitle>
-                    <Badge variant={
-                      group.difficulty === 'débutant' ? 'secondary' :
-                      group.difficulty === 'intermédiaire' ? 'default' : 'destructive'
-                    }>
-                      {group.difficulty}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-gray-600 text-sm">{group.description}</p>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center text-gray-500">
-                      <Users className="h-4 w-4 mr-1" />
-                      {group.members} membres
-                    </div>
-                    <Badge variant="outline">{group.category}</Badge>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Prochaine session: {new Date(group.next_session).toLocaleDateString('fr-FR')}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {group.location === 'online' ? 'En ligne' : 'Présentiel'}
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    className="w-full"
-                    onClick={() => joinStudyGroup(group.id)}
-                  >
-                    Rejoindre le groupe
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+          <TabsContent value="groups" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {groups.map((group) => (
+                <Card key={group.id} className="hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{group.name}</span>
+                      <Badge>{group.members} membres</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-4">{group.description}</p>
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 transition-colors">
+                      Rejoindre le Groupe
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-        <TabsContent value="events" className="space-y-6">
-          <div className="text-center py-12">
-            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              Événements à venir
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Participez aux webinaires, conférences et ateliers de la communauité We Learn
-            </p>
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-              Voir les événements
-            </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="events" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {events.map((event) => (
+                <Card key={event.id} className="hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader>
+                    <CardTitle>{event.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-green-600" />
+                        <span>{event.date} à {event.time}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-2 text-blue-600" />
+                        <span>{event.participants} participants</span>
+                      </div>
+                      <Button className="w-full bg-green-600 hover:bg-green-700 transition-colors">
+                        S'inscrire
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
