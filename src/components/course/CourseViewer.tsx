@@ -2,33 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { QuizInterface } from '../quiz/QuizInterface';
-import { 
-  ArrowLeft, 
-  Play, 
-  Pause, 
-  CheckCircle, 
-  Lock,
-  BookOpen,
-  Video,
-  FileText,
-  Award
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-interface Module {
-  id: string;
-  title: string;
-  type: 'video' | 'text' | 'quiz';
-  content: string;
-  duration?: number;
-  video_url?: string;
-  quiz_questions?: any[];
-}
+import { QuizInterface } from '@/components/quiz/QuizInterface';
+import { ArrowLeft, Play, CheckCircle, Clock, BookOpen, Users } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -39,10 +18,28 @@ interface Course {
   duration_minutes: number;
   is_premium: boolean;
   price_fcfa: number;
-  thumbnail_url?: string;
   content: {
     modules: Module[];
   };
+}
+
+interface Module {
+  id: string;
+  title: string;
+  type: 'text' | 'video' | 'quiz';
+  content?: string;
+  videoUrl?: string;
+  questions?: QuizQuestion[];
+  duration_minutes?: number;
+}
+
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation?: string;
+  points?: number;
 }
 
 interface CourseViewerProps {
@@ -53,16 +50,16 @@ interface CourseViewerProps {
 
 export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => {
   const [course, setCourse] = useState<Course | null>(null);
-  const [currentModule, setCurrentModule] = useState(0);
-  const [completedModules, setCompletedModules] = useState<number[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const { toast } = useToast();
+  const [completedModules, setCompletedModules] = useState<string[]>([]);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadCourse();
     loadProgress();
-  }, [courseId]);
+  }, [courseId, user]);
 
   const loadCourse = async () => {
     try {
@@ -73,23 +70,9 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
         .single();
 
       if (error) throw error;
-      
-      // Type assertion with proper content structure
-      const courseData: Course = {
-        ...data,
-        content: typeof data.content === 'string' 
-          ? JSON.parse(data.content) 
-          : data.content || { modules: [] }
-      };
-      
-      setCourse(courseData);
+      setCourse(data);
     } catch (error) {
       console.error('Error loading course:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger le cours",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
@@ -97,7 +80,7 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
 
   const loadProgress = async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_progress')
         .select('*')
         .eq('user_id', user.id)
@@ -105,33 +88,23 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
         .single();
 
       if (data) {
-        // Safe parsing of completed_modules
-        let completedModulesData: number[] = [];
-        if (data.completed_modules) {
-          if (typeof data.completed_modules === 'string') {
-            try {
-              completedModulesData = JSON.parse(data.completed_modules);
-            } catch (e) {
-              completedModulesData = [];
-            }
-          } else if (Array.isArray(data.completed_modules)) {
-            completedModulesData = data.completed_modules;
-          }
-        }
-        
-        setCompletedModules(completedModulesData);
         setProgress(data.progress_percentage || 0);
+        setCompletedModules(Array.isArray(data.completed_modules) ? data.completed_modules.map(String) : []);
+        setCurrentModuleIndex(data.current_module_index || 0);
       }
     } catch (error) {
       console.error('Error loading progress:', error);
     }
   };
 
-  const markModuleComplete = async (moduleIndex: number) => {
-    if (completedModules.includes(moduleIndex)) return;
+  const updateProgress = async (moduleId: string, completed: boolean = true) => {
+    if (!course) return;
 
-    const newCompleted = [...completedModules, moduleIndex];
-    const newProgress = Math.round((newCompleted.length / (course?.content.modules.length || 1)) * 100);
+    const newCompletedModules = completed 
+      ? [...new Set([...completedModules, moduleId])]
+      : completedModules.filter(id => id !== moduleId);
+
+    const newProgress = (newCompletedModules.length / course.content.modules.length) * 100;
 
     try {
       const { error } = await supabase
@@ -140,38 +113,52 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
           user_id: user.id,
           course_id: courseId,
           progress_percentage: newProgress,
-          completed_modules: JSON.stringify(newCompleted),
+          completed_modules: newCompletedModules,
+          current_module_index: currentModuleIndex,
+          completed: newProgress === 100,
           last_accessed_at: new Date().toISOString()
         });
 
       if (error) throw error;
 
-      setCompletedModules(newCompleted);
+      setCompletedModules(newCompletedModules);
       setProgress(newProgress);
-
-      toast({
-        title: "Module terminé !",
-        description: `Vous avez gagné 50 points ! Progression: ${newProgress}%`,
-      });
-
-      if (newProgress === 100) {
-        toast({
-          title: "🎉 Cours terminé !",
-          description: "Félicitations ! Vous pouvez maintenant télécharger votre certificat.",
-        });
-      }
     } catch (error) {
       console.error('Error updating progress:', error);
+    }
+  };
+
+  const handleModuleComplete = () => {
+    if (!course) return;
+    const currentModule = course.content.modules[currentModuleIndex];
+    updateProgress(currentModule.id);
+  };
+
+  const handleQuizComplete = (score: number) => {
+    setShowQuiz(false);
+    handleModuleComplete();
+    
+    if (currentModuleIndex < course!.content.modules.length - 1) {
+      setCurrentModuleIndex(currentModuleIndex + 1);
+    }
+  };
+
+  const nextModule = () => {
+    if (course && currentModuleIndex < course.content.modules.length - 1) {
+      setCurrentModuleIndex(currentModuleIndex + 1);
+    }
+  };
+
+  const previousModule = () => {
+    if (currentModuleIndex > 0) {
+      setCurrentModuleIndex(currentModuleIndex - 1);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du cours...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
@@ -179,171 +166,191 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
   if (!course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <h3 className="text-lg font-semibold mb-2">Cours introuvable</h3>
-            <p className="text-gray-600 mb-4">Le cours demandé n'existe pas.</p>
-            <Button onClick={onClose}>Retour</Button>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Cours non trouvé</h2>
+          <Button onClick={onClose}>Retour au tableau de bord</Button>
+        </div>
       </div>
     );
   }
 
-  const currentModuleData = course.content.modules[currentModule];
-  const isModuleCompleted = completedModules.includes(currentModule);
+  const currentModule = course.content.modules[currentModuleIndex];
+  const isModuleCompleted = completedModules.includes(currentModule.id);
+
+  if (showQuiz && currentModule.type === 'quiz' && currentModule.questions) {
+    return (
+      <QuizInterface
+        courseId={courseId}
+        questions={currentModule.questions.map(q => ({
+          id: q.id,
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation || '',
+          points: q.points || 1
+        }))}
+        onComplete={handleQuizComplete}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" onClick={onClose}>
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Button variant="ghost" size="sm" onClick={onClose} className="mr-4">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour
               </Button>
               <div>
-                <h1 className="text-lg font-semibold">{course.title}</h1>
-                <p className="text-sm text-gray-600">{course.category} • {course.level}</p>
+                <h1 className="text-xl font-bold text-gray-900">{course.title}</h1>
+                <div className="flex items-center space-x-2 mt-1">
+                  <Badge variant="outline">{course.level}</Badge>
+                  <Badge variant="outline">{course.category}</Badge>
+                  <span className="text-sm text-gray-500 flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {course.duration_minutes} min
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant={course.is_premium ? "default" : "secondary"}>
-                {course.is_premium ? "Premium" : "Gratuit"}
-              </Badge>
-              <Progress value={progress} className="w-32" />
-              <span className="text-sm font-medium">{progress}%</span>
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-900">{Math.round(progress)}% terminé</div>
+              <Progress value={progress} className="w-32 mt-1" />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar - Module List */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Modules du Cours</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {course.content.modules.map((module, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentModule(index)}
-                    className={`w-full p-3 text-left rounded-lg border transition-colors ${
-                      currentModule === index
-                        ? 'bg-blue-50 border-blue-200'
-                        : 'bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        {module.type === 'video' && <Video className="h-4 w-4 text-blue-500" />}
-                        {module.type === 'text' && <FileText className="h-4 w-4 text-green-500" />}
-                        {module.type === 'quiz' && <BookOpen className="h-4 w-4 text-purple-500" />}
-                        <span className="text-sm font-medium">{module.title}</span>
-                      </div>
-                      {completedModules.includes(index) && (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Course Content */}
           <div className="lg:col-span-3">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{currentModuleData?.title}</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>{currentModule.title}</span>
                   {isModuleCompleted && (
-                    <Badge variant="outline" className="text-green-600">
+                    <Badge className="bg-green-100 text-green-800">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Terminé
                     </Badge>
                   )}
-                </div>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {currentModuleData?.type === 'video' && (
-                  <div className="space-y-4">
-                    <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
-                      {currentModuleData.video_url ? (
-                        <video
-                          controls
-                          className="w-full h-full rounded-lg"
-                          src={currentModuleData.video_url}
-                        />
-                      ) : (
-                        <div className="text-center text-white">
-                          <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                          <p>Vidéo en cours de préparation</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="prose max-w-none">
-                      <p>{currentModuleData.content}</p>
-                    </div>
-                  </div>
-                )}
-
-                {currentModuleData?.type === 'text' && (
+                {currentModule.type === 'text' && (
                   <div className="prose max-w-none">
-                    <div dangerouslySetInnerHTML={{ __html: currentModuleData.content }} />
+                    <div className="whitespace-pre-line text-gray-700 leading-relaxed">
+                      {currentModule.content}
+                    </div>
                   </div>
                 )}
 
-                {currentModuleData?.type === 'quiz' && currentModuleData.quiz_questions && (
-                  <QuizInterface
-                    questions={currentModuleData.quiz_questions.map((q: any) => ({
-                      id: q.id || Math.random().toString(),
-                      question: q.question,
-                      options: q.options,
-                      correctAnswer: q.correct_answer || q.correctAnswer,
-                      explanation: q.explanation,
-                      points: q.points || 10
-                    }))}
-                    onComplete={(score) => {
-                      toast({
-                        title: "Quiz terminé !",
-                        description: `Score: ${score}%`,
-                      });
-                      markModuleComplete(currentModule);
-                    }}
-                  />
+                {currentModule.type === 'video' && (
+                  <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
+                    <div className="text-center text-white">
+                      <Play className="h-16 w-16 mx-auto mb-4" />
+                      <p>Lecteur vidéo à intégrer</p>
+                      <p className="text-sm opacity-75">{currentModule.videoUrl}</p>
+                    </div>
+                  </div>
                 )}
 
-                {/* Module Navigation */}
-                <div className="flex justify-between items-center mt-6 pt-6 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentModule(Math.max(0, currentModule - 1))}
-                    disabled={currentModule === 0}
+                {currentModule.type === 'quiz' && (
+                  <div className="text-center py-12">
+                    <BookOpen className="h-16 w-16 mx-auto text-blue-500 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Quiz d'évaluation</h3>
+                    <p className="text-gray-600 mb-6">
+                      Testez vos connaissances avec {currentModule.questions?.length} questions
+                    </p>
+                    <Button onClick={() => setShowQuiz(true)} size="lg">
+                      Commencer le Quiz
+                    </Button>
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                  <Button 
+                    variant="outline" 
+                    onClick={previousModule}
+                    disabled={currentModuleIndex === 0}
                   >
-                    Module précédent
+                    Module Précédent
                   </Button>
 
                   <div className="flex space-x-2">
-                    {!isModuleCompleted && currentModuleData?.type !== 'quiz' && (
-                      <Button onClick={() => markModuleComplete(currentModule)}>
+                    {!isModuleCompleted && currentModule.type !== 'quiz' && (
+                      <Button onClick={handleModuleComplete}>
                         <CheckCircle className="h-4 w-4 mr-2" />
                         Marquer comme terminé
                       </Button>
                     )}
                     
-                    <Button
-                      onClick={() => setCurrentModule(Math.min(course.content.modules.length - 1, currentModule + 1))}
-                      disabled={currentModule === course.content.modules.length - 1}
+                    <Button 
+                      onClick={nextModule}
+                      disabled={currentModuleIndex === course.content.modules.length - 1}
                     >
-                      Module suivant
+                      Module Suivant
                     </Button>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Modules du cours</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {course.content.modules.map((module, index) => (
+                  <div
+                    key={module.id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      index === currentModuleIndex
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setCurrentModuleIndex(index)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{module.title}</div>
+                        <div className="text-xs text-gray-500 capitalize">{module.type}</div>
+                      </div>
+                      {completedModules.includes(module.id) && (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Course Info */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-base">Informations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center text-sm">
+                  <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>{course.duration_minutes} minutes</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <BookOpen className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>{course.content.modules.length} modules</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Users className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>Niveau {course.level}</span>
                 </div>
               </CardContent>
             </Card>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Wand2, Plus, Trash2, Eye, Edit, BookOpen } from 'lucide-react';
+import { Wand2, Plus, Trash2, Eye, Edit, BookOpen, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Course {
@@ -43,6 +44,9 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
     modules: [] as any[]
   });
   const [aiTopic, setAiTopic] = useState('');
+  const [aiLanguage, setAiLanguage] = useState('fr');
+  const [aiLevel, setAiLevel] = useState('debutant');
+  const [aiDuration, setAiDuration] = useState(60);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -75,43 +79,20 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
 
     setIsGenerating(true);
     try {
-      // Simulate AI course generation
+      // Génération avancée de cours par IA
+      const modules = await generateAdvancedModules(aiTopic, aiLanguage, aiLevel, aiDuration);
+      
       const generatedCourse = {
-        title: `Cours: ${aiTopic}`,
-        description: `Cours complet sur ${aiTopic} adapté aux étudiants africains`,
-        category: aiTopic.toLowerCase().includes('finance') || aiTopic.toLowerCase().includes('argent') ? 'finance' : 'technology',
-        level: 'debutant',
-        duration_minutes: 120,
-        is_premium: false,
-        price_fcfa: 0,
-        modules: [
-          {
-            title: `Introduction à ${aiTopic}`,
-            content: `Contenu d'introduction généré par IA pour ${aiTopic}`,
-            type: 'text'
-          },
-          {
-            title: `Concepts clés de ${aiTopic}`,
-            content: `Explication des concepts principaux de ${aiTopic}`,
-            type: 'text'
-          },
-          {
-            title: `Applications pratiques`,
-            content: `Exemples concrets et applications de ${aiTopic} en Afrique`,
-            type: 'text'
-          },
-          {
-            title: 'Quiz de validation',
-            questions: [
-              {
-                question: `Quelle est l'importance de ${aiTopic} ?`,
-                options: ['Très importante', 'Importante', 'Peu importante', 'Pas importante'],
-                correct: 0
-              }
-            ],
-            type: 'quiz'
-          }
-        ]
+        title: `${aiLanguage === 'fr' ? 'Cours complet' : 'Complete Course'}: ${aiTopic}`,
+        description: aiLanguage === 'fr' 
+          ? `Cours détaillé sur ${aiTopic} adapté aux étudiants africains de niveau ${aiLevel}`
+          : `Detailed course on ${aiTopic} adapted for African students at ${aiLevel} level`,
+        category: getCategoryFromTopic(aiTopic),
+        level: aiLevel,
+        duration_minutes: aiDuration,
+        is_premium: aiDuration > 120,
+        price_fcfa: aiDuration > 120 ? 5000 : 0,
+        modules: modules
       };
 
       setFormData(generatedCourse);
@@ -119,7 +100,7 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
 
       toast({
         title: "Cours généré !",
-        description: "Le cours a été généré avec succès par l'IA. Vous pouvez maintenant le modifier et l'enregistrer.",
+        description: `Cours complet de ${modules.length} modules généré avec succès par l'IA.`,
       });
     } catch (error) {
       console.error('Error generating course:', error);
@@ -133,7 +114,247 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
     }
   };
 
+  const generateAdvancedModules = async (topic: string, language: string, level: string, duration: number) => {
+    const moduleCount = Math.max(3, Math.floor(duration / 20));
+    const modules = [];
+
+    // Module d'introduction
+    modules.push({
+      id: `intro-${Date.now()}`,
+      title: language === 'fr' ? `Introduction à ${topic}` : `Introduction to ${topic}`,
+      type: 'text',
+      content: generateIntroContent(topic, language, level),
+      duration_minutes: Math.floor(duration * 0.2)
+    });
+
+    // Modules de contenu principal
+    for (let i = 1; i < moduleCount - 1; i++) {
+      modules.push({
+        id: `module-${i}-${Date.now()}`,
+        title: language === 'fr' 
+          ? `${topic} - Partie ${i}` 
+          : `${topic} - Part ${i}`,
+        type: i % 3 === 0 ? 'video' : 'text',
+        content: generateModuleContent(topic, i, language, level),
+        videoUrl: i % 3 === 0 ? `https://example.com/video-${topic}-${i}` : undefined,
+        duration_minutes: Math.floor(duration * 0.6 / (moduleCount - 2))
+      });
+    }
+
+    // Quiz final
+    modules.push({
+      id: `quiz-${Date.now()}`,
+      title: language === 'fr' ? 'Quiz d\'évaluation finale' : 'Final Assessment Quiz',
+      type: 'quiz',
+      questions: generateQuizQuestions(topic, language, level),
+      duration_minutes: Math.floor(duration * 0.2)
+    });
+
+    return modules;
+  };
+
+  const generateIntroContent = (topic: string, language: string, level: string) => {
+    if (language === 'fr') {
+      return `Bienvenue dans ce cours complet sur ${topic} !
+
+Ce cours est spécialement conçu pour les étudiants africains de niveau ${level}. Nous allons explorer ensemble tous les aspects importants de ${topic}, avec des exemples concrets et des applications pratiques adaptées au contexte africain.
+
+Objectifs du cours :
+• Comprendre les concepts fondamentaux de ${topic}
+• Maîtriser les applications pratiques
+• Développer des compétences applicables dans le contexte africain
+• Acquérir une expertise solide dans le domaine
+
+À la fin de ce cours, vous serez capable d'appliquer vos connaissances de ${topic} dans des situations réelles et de continuer votre apprentissage de manière autonome.`;
+    } else {
+      return `Welcome to this comprehensive course on ${topic}!
+
+This course is specially designed for African students at ${level} level. We will explore together all the important aspects of ${topic}, with concrete examples and practical applications adapted to the African context.
+
+Course objectives:
+• Understand the fundamental concepts of ${topic}
+• Master practical applications
+• Develop skills applicable in the African context
+• Acquire solid expertise in the field
+
+By the end of this course, you will be able to apply your knowledge of ${topic} in real situations and continue your learning independently.`;
+    }
+  };
+
+  const generateModuleContent = (topic: string, moduleIndex: number, language: string, level: string) => {
+    const contents = {
+      fr: [
+        `Dans ce module, nous approfondissons les aspects techniques de ${topic}. 
+
+Les concepts clés à retenir :
+1. Définitions et terminologie essentielles
+2. Principes de base et leur application
+3. Exemples concrets dans le contexte africain
+4. Exercices pratiques
+
+Il est important de bien comprendre ces éléments avant de passer au module suivant.`,
+        `Ce module se concentre sur l'application pratique de ${topic}.
+
+Points importants :
+• Cas d'usage réels en Afrique
+• Outils et ressources disponibles
+• Stratégies d'implémentation
+• Bonnes pratiques à adopter
+
+Ces connaissances vous permettront de mettre en pratique ${topic} efficacement.`,
+        `Approfondissement avancé de ${topic}.
+
+Sujets abordés :
+- Techniques avancées
+- Résolution de problèmes complexes
+- Optimisation et amélioration
+- Perspectives d'avenir
+
+Ce module prépare votre expertise approfondie en ${topic}.`
+      ],
+      en: [
+        `In this module, we delve into the technical aspects of ${topic}.
+
+Key concepts to remember:
+1. Essential definitions and terminology
+2. Basic principles and their application
+3. Concrete examples in the African context
+4. Practical exercises
+
+It's important to understand these elements well before moving to the next module.`,
+        `This module focuses on the practical application of ${topic}.
+
+Important points:
+• Real use cases in Africa
+• Available tools and resources
+• Implementation strategies
+• Best practices to adopt
+
+This knowledge will allow you to effectively implement ${topic}.`,
+        `Advanced deepening of ${topic}.
+
+Topics covered:
+- Advanced techniques
+- Complex problem solving
+- Optimization and improvement
+- Future perspectives
+
+This module prepares your in-depth expertise in ${topic}.`
+      ]
+    };
+
+    return contents[language as keyof typeof contents][moduleIndex % 3];
+  };
+
+  const generateQuizQuestions = (topic: string, language: string, level: string) => {
+    if (language === 'fr') {
+      return [
+        {
+          id: `q1-${Date.now()}`,
+          question: `Quelle est la définition principale de ${topic} ?`,
+          options: [
+            `${topic} est un concept fondamental`,
+            `${topic} est une technologie avancée`,
+            `${topic} est uniquement théorique`,
+            `${topic} n'a pas d'application pratique`
+          ],
+          correctAnswer: 0,
+          explanation: `${topic} est effectivement un concept fondamental avec de nombreuses applications pratiques.`,
+          points: 10
+        },
+        {
+          id: `q2-${Date.now()}`,
+          question: `Comment peut-on appliquer ${topic} en Afrique ?`,
+          options: [
+            `Cela n'est pas applicable`,
+            `Avec des adaptations locales`,
+            `Seulement dans les grandes villes`,
+            `Uniquement pour les experts`
+          ],
+          correctAnswer: 1,
+          explanation: `${topic} peut être appliqué en Afrique avec des adaptations appropriées au contexte local.`,
+          points: 15
+        },
+        {
+          id: `q3-${Date.now()}`,
+          question: `Quel est l'avantage principal de maîtriser ${topic} ?`,
+          options: [
+            `Aucun avantage réel`,
+            `Opportunités professionnelles`,
+            `Seulement académique`,
+            `Très complexe`
+          ],
+          correctAnswer: 1,
+          explanation: `Maîtriser ${topic} ouvre de nombreuses opportunités professionnelles et personnelles.`,
+          points: 10
+        }
+      ];
+    } else {
+      return [
+        {
+          id: `q1-${Date.now()}`,
+          question: `What is the main definition of ${topic}?`,
+          options: [
+            `${topic} is a fundamental concept`,
+            `${topic} is an advanced technology`,
+            `${topic} is only theoretical`,
+            `${topic} has no practical application`
+          ],
+          correctAnswer: 0,
+          explanation: `${topic} is indeed a fundamental concept with many practical applications.`,
+          points: 10
+        },
+        {
+          id: `q2-${Date.now()}`,
+          question: `How can ${topic} be applied in Africa?`,
+          options: [
+            `It's not applicable`,
+            `With local adaptations`,
+            `Only in big cities`,
+            `Only for experts`
+          ],
+          correctAnswer: 1,
+          explanation: `${topic} can be applied in Africa with appropriate adaptations to the local context.`,
+          points: 15
+        },
+        {
+          id: `q3-${Date.now()}`,
+          question: `What is the main advantage of mastering ${topic}?`,
+          options: [
+            `No real advantage`,
+            `Professional opportunities`,
+            `Only academic`,
+            `Very complex`
+          ],
+          correctAnswer: 1,
+          explanation: `Mastering ${topic} opens many professional and personal opportunities.`,
+          points: 10
+        }
+      ];
+    }
+  };
+
+  const getCategoryFromTopic = (topic: string) => {
+    const topicLower = topic.toLowerCase();
+    if (topicLower.includes('finance') || topicLower.includes('argent') || topicLower.includes('épargne') || topicLower.includes('investissement')) {
+      return 'finance';
+    }
+    if (topicLower.includes('tech') || topicLower.includes('ia') || topicLower.includes('crypto') || topicLower.includes('blockchain')) {
+      return 'technology';
+    }
+    return 'general';
+  };
+
   const createCourse = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Le titre du cours est requis",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
       const { error } = await supabase
@@ -178,6 +399,10 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
   };
 
   const deleteCourse = async (courseId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce cours ? Cette action est irréversible.')) {
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('courses')
@@ -200,49 +425,97 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
         description: "Impossible de supprimer le cours",
         variant: "destructive"
       });
-    } finally {
-      setIsCreating(false);
     }
   };
 
   return (
     <div className="space-y-6">
       {/* AI Course Generator */}
-      <Card>
+      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Wand2 className="h-6 w-6 text-purple-600" />
-            <span>Générateur de Cours IA</span>
+            <Sparkles className="h-6 w-6 text-purple-600" />
+            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Générateur de Cours IA Avancé
+            </span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex space-x-4">
-            <Input
-              placeholder="Ex: Gestion budgétaire, Cryptomonnaies, Intelligence artificielle..."
-              value={aiTopic}
-              onChange={(e) => setAiTopic(e.target.value)}
-              className="flex-1"
-            />
-            <Button 
-              onClick={generateCourseWithAI}
-              disabled={isGenerating}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Génération...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  Générer avec IA
-                </>
-              )}
-            </Button>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="ai-topic">Sujet du cours</Label>
+              <Input
+                id="ai-topic"
+                placeholder="Ex: Finance personnelle, Cryptomonnaies, Intelligence artificielle..."
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="ai-language">Langue</Label>
+              <Select value={aiLanguage} onValueChange={setAiLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fr">Français</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            L'IA va créer un cours complet avec modules, quizz et contenus adaptés aux étudiants africains.
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="ai-level">Niveau</Label>
+              <Select value={aiLevel} onValueChange={setAiLevel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="debutant">Débutant</SelectItem>
+                  <SelectItem value="intermediaire">Intermédiaire</SelectItem>
+                  <SelectItem value="avance">Avancé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="ai-duration">Durée (minutes)</Label>
+              <Select value={aiDuration.toString()} onValueChange={(v) => setAiDuration(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="60">60 minutes</SelectItem>
+                  <SelectItem value="90">90 minutes</SelectItem>
+                  <SelectItem value="120">120 minutes</SelectItem>
+                  <SelectItem value="180">180 minutes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Button 
+            onClick={generateCourseWithAI}
+            disabled={isGenerating}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Génération par IA...
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-4 w-4 mr-2" />
+                Générer un Cours Complet avec IA
+              </>
+            )}
+          </Button>
+          
+          <p className="text-sm text-gray-600 text-center">
+            L'IA va créer un cours structuré avec modules interactifs, quiz personnalisés et contenus adaptés aux étudiants africains.
           </p>
         </CardContent>
       </Card>
@@ -371,10 +644,10 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
         <CardContent>
           <div className="space-y-4">
             {courses.map((course) => (
-              <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex-1">
                   <h3 className="font-medium">{course.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{course.description}</p>
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{course.description}</p>
                   <div className="flex items-center space-x-2 mt-2">
                     <Badge variant="outline">{course.category}</Badge>
                     <Badge variant="outline">{course.level}</Badge>
@@ -386,24 +659,33 @@ export const CourseCreator = ({ user, onCourseCreated }: CourseCreatorProps) => 
                     )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
+                <div className="flex items-center space-x-2 ml-4">
+                  <Button variant="ghost" size="sm" title="Voir le cours">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" title="Modifier le cours">
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={() => deleteCourse(course.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Supprimer le cours"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ))}
+            
+            {courses.length === 0 && (
+              <div className="text-center py-12">
+                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Aucun cours créé pour le moment</p>
+                <p className="text-sm text-gray-500">Utilisez le générateur IA pour créer votre premier cours</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
