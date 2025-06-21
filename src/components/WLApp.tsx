@@ -6,13 +6,16 @@ import { AuthForm } from './auth/AuthForm';
 import { Dashboard } from './dashboard/Dashboard';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { CourseViewer } from './course/CourseViewer';
+import { StudyPlan } from './learning/StudyPlan';
+import { CommunityHub } from './social/CommunityHub';
+import { LearningAnalytics } from './analytics/LearningAnalytics';
 
 export const WLApp = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'course' | 'admin'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'course' | 'admin' | 'study-plan' | 'community' | 'analytics'>('dashboard');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,6 +69,11 @@ export const WLApp = () => {
     setCurrentView('course');
   };
 
+  const handleViewChange = (view: 'dashboard' | 'study-plan' | 'community' | 'analytics') => {
+    setCurrentView(view);
+    setSelectedCourseId(null);
+  };
+
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
     setSelectedCourseId(null);
@@ -110,11 +118,27 @@ export const WLApp = () => {
     );
   }
 
+  // Show study plan
+  if (currentView === 'study-plan') {
+    return <StudyPlan user={user} />;
+  }
+
+  // Show community hub
+  if (currentView === 'community') {
+    return <CommunityHub user={user} />;
+  }
+
+  // Show learning analytics
+  if (currentView === 'analytics') {
+    return <LearningAnalytics user={user} />;
+  }
+
   // Show regular dashboard
   return (
     <Dashboard 
       user={user} 
       onCourseSelect={handleCourseSelect}
+      onViewChange={handleViewChange}
     />
   );
 };

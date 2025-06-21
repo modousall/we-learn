@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -47,7 +46,7 @@ export const NotificationCenter = ({ user, isOpen, onClose }: NotificationCenter
 
       if (error) throw error;
       
-      // Type assertion to match our interface
+      // Safe type conversion for notifications
       const typedNotifications: Notification[] = (data || []).map(item => ({
         id: item.id,
         title: item.title,
@@ -55,7 +54,9 @@ export const NotificationCenter = ({ user, isOpen, onClose }: NotificationCenter
         type: item.type as 'motivation' | 'reminder' | 'achievement' | 'class_update' | 'parent_report',
         is_read: item.is_read,
         created_at: item.created_at,
-        metadata: item.metadata || {}
+        metadata: typeof item.metadata === 'object' && item.metadata !== null 
+          ? item.metadata as Record<string, any>
+          : {}
       }));
       
       setNotifications(typedNotifications);

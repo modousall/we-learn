@@ -47,9 +47,10 @@ interface UserProgress {
 interface DashboardProps {
   user: User;
   onCourseSelect?: (courseId: string) => void;
+  onViewChange?: (view: 'dashboard' | 'study-plan' | 'community' | 'analytics') => void;
 }
 
-export const Dashboard = ({ user, onCourseSelect }: DashboardProps) => {
+export const Dashboard = ({ user, onCourseSelect, onViewChange }: DashboardProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
   const [profile, setProfile] = useState<any>(null);
@@ -156,6 +157,35 @@ export const Dashboard = ({ user, onCourseSelect }: DashboardProps) => {
               />
               <h1 className="text-2xl font-bold text-gray-900">We Learn</h1>
             </div>
+            
+            {/* Navigation Menu */}
+            <nav className="hidden md:flex space-x-8">
+              <button 
+                onClick={() => onViewChange?.('dashboard')}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Accueil
+              </button>
+              <button 
+                onClick={() => onViewChange?.('study-plan')}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Plan d'Études
+              </button>
+              <button 
+                onClick={() => onViewChange?.('community')}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Communauté
+              </button>
+              <button 
+                onClick={() => onViewChange?.('analytics')}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Analyses
+              </button>
+            </nav>
+
             <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
@@ -176,87 +206,115 @@ export const Dashboard = ({ user, onCourseSelect }: DashboardProps) => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Bienvenue, {displayName}! 👋
-          </h2>
-          <p className="text-gray-600">
-            Continuez votre parcours d'apprentissage et découvrez de nouveaux cours.
-          </p>
+        {/* Welcome Section with enhanced design */}
+        <div className="mb-8 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-4xl font-bold mb-2">
+                Bienvenue, {displayName}! 👋
+              </h2>
+              <p className="text-xl opacity-90 mb-4">
+                Continuez votre parcours d'apprentissage et découvrez de nouveaux horizons.
+              </p>
+              <div className="flex space-x-4">
+                <Button 
+                  variant="secondary" 
+                  onClick={() => onViewChange?.('study-plan')}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Mes Objectifs
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={() => onViewChange?.('community')}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Rejoindre la Communauté
+                </Button>
+              </div>
+            </div>
+            <div className="hidden lg:block">
+              <div className="text-right">
+                <p className="text-3xl font-bold">{getCompletedCourses()}</p>
+                <p className="opacity-80">cours terminés</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cours Complétés</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
+              <Trophy className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{getCompletedCourses()}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs opacity-80">
                 sur {courses.length} cours disponibles
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Temps d'Étude</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{Math.floor(getTotalStudyTime() / 60)}h</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs opacity-80">
                 {getTotalStudyTime() % 60}min cette semaine
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Points Gagnés</CardTitle>
-              <Star className="h-4 w-4 text-yellow-500" />
+              <Star className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">1,890</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs opacity-80">
                 +150 cette semaine
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Classement</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <Target className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">#8</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs opacity-80">
                 Dans votre école
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content Tabs */}
+        {/* Main Content Tabs with enhanced design */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="courses" className="flex items-center space-x-2">
+          <TabsList className="grid w-full grid-cols-4 bg-white p-1 shadow-lg rounded-xl">
+            <TabsTrigger value="courses" className="flex items-center space-x-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <BookOpen className="h-4 w-4" />
               <span>Cours</span>
             </TabsTrigger>
-            <TabsTrigger value="forum" className="flex items-center space-x-2">
+            <TabsTrigger value="forum" className="flex items-center space-x-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white">
               <MessageSquare className="h-4 w-4" />
               <span>Forum</span>
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex items-center space-x-2">
+            <TabsTrigger value="leaderboard" className="flex items-center space-x-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
               <Trophy className="h-4 w-4" />
               <span>Classement</span>
             </TabsTrigger>
-            <TabsTrigger value="achievements" className="flex items-center space-x-2">
+            <TabsTrigger value="achievements" className="flex items-center space-x-2 data-[state=active]:bg-yellow-500 data-[state=active]:text-white">
               <Award className="h-4 w-4" />
               <span>Badges</span>
             </TabsTrigger>
