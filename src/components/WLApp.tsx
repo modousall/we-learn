@@ -19,7 +19,6 @@ export const WLApp = () => {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [navigationHistory, setNavigationHistory] = useState<ViewType[]>(['dashboard']);
 
   useEffect(() => {
     // Set up auth state listener avec optimisation
@@ -67,41 +66,21 @@ export const WLApp = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Navigation optimisée avec historique
+  // Navigation optimisée
   const handleCourseSelect = useCallback((courseId: string) => {
     setSelectedCourseId(courseId);
     setCurrentView('course');
-    setNavigationHistory(prev => [...prev, 'course']);
   }, []);
 
   const handleViewChange = useCallback((view: ViewType) => {
     setCurrentView(view);
     setSelectedCourseId(null);
-    setNavigationHistory(prev => [...prev, view]);
   }, []);
 
   const handleBackToDashboard = useCallback(() => {
     setCurrentView('dashboard');
     setSelectedCourseId(null);
-    setNavigationHistory(['dashboard']);
   }, []);
-
-  const handleBack = useCallback(() => {
-    if (navigationHistory.length > 1) {
-      const newHistory = [...navigationHistory];
-      newHistory.pop(); // Retire la vue actuelle
-      const previousView = newHistory[newHistory.length - 1];
-      
-      setNavigationHistory(newHistory);
-      setCurrentView(previousView);
-      
-      if (previousView !== 'course') {
-        setSelectedCourseId(null);
-      }
-    } else {
-      handleBackToDashboard();
-    }
-  }, [navigationHistory, handleBackToDashboard]);
 
   if (loading) {
     return (
@@ -137,24 +116,24 @@ export const WLApp = () => {
       <CourseViewer
         courseId={selectedCourseId}
         user={user}
-        onClose={handleBack}
+        onClose={handleBackToDashboard}
       />
     );
   }
 
   // Show study plan avec navigation
   if (currentView === 'study-plan') {
-    return <StudyPlan user={user} onBack={handleBack} />;
+    return <StudyPlan user={user} onBack={handleBackToDashboard} />;
   }
 
   // Show community hub avec navigation
   if (currentView === 'community') {
-    return <CommunityHub user={user} onBack={handleBack} />;
+    return <CommunityHub user={user} onBack={handleBackToDashboard} />;
   }
 
   // Show learning analytics avec navigation
   if (currentView === 'analytics') {
-    return <LearningAnalytics user={user} onBack={handleBack} />;
+    return <LearningAnalytics user={user} onBack={handleBackToDashboard} />;
   }
 
   // Show regular dashboard

@@ -65,7 +65,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
 
   useEffect(() => {
     loadAnalytics();
-  }, [user]);
+  }, [user.id]);
 
   const loadAnalytics = async () => {
     try {
@@ -270,7 +270,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
                 <TrendingUp className="h-8 w-8 text-blue-500" />
                 <div>
                   <h4 className="font-medium">Top Performer</h4>
-                  <p className="text-sm text-gray-600">Score moyen {'>'}= 80%</p>
+                  <p className="text-sm text-gray-600">Score moyen &gt;= 80%</p>
                 </div>
               </div>
             </div>
