@@ -23,6 +23,17 @@ interface AnalyticsStats {
   rank: number;
 }
 
+interface WeeklyData {
+  week: string;
+  heures: number;
+  score: number;
+}
+
+interface SkillData {
+  skill: string;
+  score: number;
+}
+
 export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   const [stats, setStats] = useState<AnalyticsStats>({
     totalHours: 0,
@@ -35,7 +46,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   const [loading, setLoading] = useState(true);
 
   // Données de performance par semaine (mock data)
-  const weeklyData = [
+  const weeklyData: WeeklyData[] = [
     { week: 'S1', heures: 4, score: 85 },
     { week: 'S2', heures: 6, score: 78 },
     { week: 'S3', heures: 3, score: 92 },
@@ -43,7 +54,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   ];
 
   // Données radar des compétences
-  const skillsData = [
+  const skillsData: SkillData[] = [
     { skill: 'Finance', score: 85 },
     { skill: 'Crypto', score: 72 },
     { skill: 'IA', score: 65 },

@@ -42,6 +42,12 @@ interface QuizQuestion {
   points?: number;
 }
 
+interface UserProgress {
+  progress_percentage: number;
+  completed_modules: string[];
+  current_module_index: number;
+}
+
 interface CourseViewerProps {
   courseId: string;
   user: User;
@@ -70,7 +76,17 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
         .single();
 
       if (error) throw error;
-      setCourse(data);
+      
+      // Safely parse the content JSON
+      if (data) {
+        const courseData: Course = {
+          ...data,
+          content: typeof data.content === 'string' 
+            ? JSON.parse(data.content) 
+            : data.content || { modules: [] }
+        };
+        setCourse(courseData);
+      }
     } catch (error) {
       console.error('Error loading course:', error);
     } finally {
@@ -89,8 +105,16 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
 
       if (data) {
         setProgress(data.progress_percentage || 0);
-        setCompletedModules(Array.isArray(data.completed_modules) ? data.completed_modules.map(String) : []);
-        setCurrentModuleIndex(data.current_module_index || 0);
+        
+        // Safely handle completed_modules Json type
+        const completedModulesData = Array.isArray(data.completed_modules) 
+          ? data.completed_modules.map(String) 
+          : typeof data.completed_modules === 'string'
+          ? JSON.parse(data.completed_modules)
+          : [];
+        
+        setCompletedModules(completedModulesData);
+        setCurrentModuleIndex(0); // Default to 0 since current_module_index doesn't exist in DB
       }
     } catch (error) {
       console.error('Error loading progress:', error);
@@ -114,7 +138,6 @@ export const CourseViewer = ({ courseId, user, onClose }: CourseViewerProps) => 
           course_id: courseId,
           progress_percentage: newProgress,
           completed_modules: newCompletedModules,
-          current_module_index: currentModuleIndex,
           completed: newProgress === 100,
           last_accessed_at: new Date().toISOString()
         });
