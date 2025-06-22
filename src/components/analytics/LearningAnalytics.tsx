@@ -4,8 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { TrendingUp, Clock, BookOpen, Target, Award, Calendar, ArrowLeft } from 'lucide-react';
 
@@ -14,28 +12,9 @@ interface LearningAnalyticsProps {
   onBack?: () => void;
 }
 
-interface StatsData {
-  totalHours: number;
-  completedCourses: number;
-  averageScore: number;
-  currentStreak: number;
-  badges: number;
-  rank: number;
-}
-
-interface WeeklyDataPoint {
-  week: string;
-  heures: number;
-  score: number;
-}
-
-interface SkillDataPoint {
-  skill: string;
-  score: number;
-}
-
 export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
-  const [stats, setStats] = useState<StatsData>({
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
     totalHours: 0,
     completedCourses: 0,
     averageScore: 0,
@@ -43,18 +22,16 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
     badges: 0,
     rank: 0
   });
-  const [loading, setLoading] = useState(true);
 
-  // Données de performance par semaine (mock data)
-  const weeklyData: WeeklyDataPoint[] = [
+  // Données statiques pour éviter les problèmes de types
+  const weeklyData = [
     { week: 'S1', heures: 4, score: 85 },
     { week: 'S2', heures: 6, score: 78 },
     { week: 'S3', heures: 3, score: 92 },
     { week: 'S4', heures: 8, score: 88 },
   ];
 
-  // Données radar des compétences
-  const skillsData: SkillDataPoint[] = [
+  const skillsData = [
     { skill: 'Finance', score: 85 },
     { skill: 'Crypto', score: 72 },
     { skill: 'IA', score: 65 },
@@ -64,21 +41,13 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   ];
 
   useEffect(() => {
-    const loadAnalytics = async () => {
+    const loadData = async () => {
       try {
-        // Charger les statistiques utilisateur
-        const { data: userProgress } = await supabase
-          .from('user_progress')
-          .select('*')
-          .eq('user_id', user.id);
-
         const { data: completedCourses } = await supabase
           .from('user_progress')
           .select('course_id')
-          .eq('user_id', user.id)
-          .eq('completed', true);
+          .eq('user_id', user.id);
 
-        // Mock data pour les statistiques
         setStats({
           totalHours: 45,
           completedCourses: completedCourses?.length || 0,
@@ -94,7 +63,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
       }
     };
 
-    loadAnalytics();
+    loadData();
   }, [user.id]);
 
   if (loading) {
@@ -107,7 +76,6 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header avec navigation rapide */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -135,7 +103,6 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview avec chargement optimisé */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -208,7 +175,6 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Performance Chart avec chargement lazy */}
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader>
               <CardTitle>Performance Hebdomadaire</CardTitle>
@@ -227,7 +193,6 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
             </CardContent>
           </Card>
 
-          {/* Skills Radar avec optimisation */}
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader>
               <CardTitle>Compétences par Domaine</CardTitle>
@@ -245,7 +210,6 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
           </Card>
         </div>
 
-        {/* Achievements avec animations */}
         <Card className="mt-8 hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <CardTitle>Réalisations Récentes</CardTitle>
