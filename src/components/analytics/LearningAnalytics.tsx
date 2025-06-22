@@ -14,7 +14,7 @@ interface LearningAnalyticsProps {
   onBack?: () => void;
 }
 
-interface AnalyticsStats {
+interface StatsData {
   totalHours: number;
   completedCourses: number;
   averageScore: number;
@@ -23,19 +23,19 @@ interface AnalyticsStats {
   rank: number;
 }
 
-interface WeeklyData {
+interface WeeklyDataPoint {
   week: string;
   heures: number;
   score: number;
 }
 
-interface SkillData {
+interface SkillDataPoint {
   skill: string;
   score: number;
 }
 
 export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
-  const [stats, setStats] = useState<AnalyticsStats>({
+  const [stats, setStats] = useState<StatsData>({
     totalHours: 0,
     completedCourses: 0,
     averageScore: 0,
@@ -46,7 +46,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   const [loading, setLoading] = useState(true);
 
   // Données de performance par semaine (mock data)
-  const weeklyData: WeeklyData[] = [
+  const weeklyData: WeeklyDataPoint[] = [
     { week: 'S1', heures: 4, score: 85 },
     { week: 'S2', heures: 6, score: 78 },
     { week: 'S3', heures: 3, score: 92 },
@@ -54,7 +54,7 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   ];
 
   // Données radar des compétences
-  const skillsData: SkillData[] = [
+  const skillsData: SkillDataPoint[] = [
     { skill: 'Finance', score: 85 },
     { skill: 'Crypto', score: 72 },
     { skill: 'IA', score: 65 },
@@ -64,38 +64,38 @@ export const LearningAnalytics = ({ user, onBack }: LearningAnalyticsProps) => {
   ];
 
   useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        // Charger les statistiques utilisateur
+        const { data: userProgress } = await supabase
+          .from('user_progress')
+          .select('*')
+          .eq('user_id', user.id);
+
+        const { data: completedCourses } = await supabase
+          .from('user_progress')
+          .select('course_id')
+          .eq('user_id', user.id)
+          .eq('completed', true);
+
+        // Mock data pour les statistiques
+        setStats({
+          totalHours: 45,
+          completedCourses: completedCourses?.length || 0,
+          averageScore: 84,
+          currentStreak: 7,
+          badges: 12,
+          rank: 23
+        });
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadAnalytics();
   }, [user.id]);
-
-  const loadAnalytics = async () => {
-    try {
-      // Charger les statistiques utilisateur
-      const { data: userProgress } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user.id);
-
-      const { data: completedCourses } = await supabase
-        .from('user_progress')
-        .select('course_id')
-        .eq('user_id', user.id)
-        .eq('completed', true);
-
-      // Mock data pour les statistiques
-      setStats({
-        totalHours: 45,
-        completedCourses: completedCourses?.length || 0,
-        averageScore: 84,
-        currentStreak: 7,
-        badges: 12,
-        rank: 23
-      });
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
