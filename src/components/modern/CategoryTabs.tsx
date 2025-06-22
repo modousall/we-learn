@@ -8,10 +8,10 @@ interface CategoryTabsProps {
 }
 
 const categories = [
-  'Motivation',
+  'Tous',
   'Éducation financière', 
   'Technologie',
-  'Apprentissage mobile'
+  'Motivation'
 ];
 
 export const CategoryTabs = ({ activeCategory, onCategoryChange }: CategoryTabsProps) => {
