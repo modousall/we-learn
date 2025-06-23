@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CourseCreator } from './CourseCreator';
 import { UserManagement } from './UserManagement';
+import { RoleManagement } from './RoleManagement';
 import { Analytics } from './Analytics';
 import { PaymentManagement } from './PaymentManagement';
 import { 
@@ -16,7 +16,8 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  PlusCircle
+  Shield,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -78,15 +79,25 @@ export const AdminDashboard = ({ user }: AdminDashboardProps) => {
     }
   };
 
+  const goBackToMain = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <img src="/lovable-uploads/8aff2116-7caa-4844-ab1a-8bb8c8474859.png" alt="WL Logo" className="h-10 w-10 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">We Learn - Admin</h1>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={goBackToMain}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+              <div className="flex items-center">
+                <img src="/lovable-uploads/8aff2116-7caa-4844-ab1a-8bb8c8474859.png" alt="WL Logo" className="h-10 w-10 mr-3" />
+                <h1 className="text-2xl font-bold text-gray-900">We Learn - Admin</h1>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">
@@ -102,7 +113,7 @@ export const AdminDashboard = ({ user }: AdminDashboardProps) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <TrendingUp className="h-4 w-4" />
               <span>Vue d'ensemble</span>
@@ -114,6 +125,10 @@ export const AdminDashboard = ({ user }: AdminDashboardProps) => {
             <TabsTrigger value="users" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Utilisateurs</span>
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Rôles</span>
             </TabsTrigger>
             <TabsTrigger value="payments" className="flex items-center space-x-2">
               <CreditCard className="h-4 w-4" />
@@ -190,6 +205,10 @@ export const AdminDashboard = ({ user }: AdminDashboardProps) => {
 
           <TabsContent value="users">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <RoleManagement />
           </TabsContent>
 
           <TabsContent value="payments">

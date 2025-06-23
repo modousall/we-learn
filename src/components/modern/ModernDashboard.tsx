@@ -1,13 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from './Header';
 import { CategoryTabs } from './CategoryTabs';
 import { VideoCard } from './VideoCard';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { AdminGuard } from '@/components/admin/AdminGuard';
+import { useUserRole } from '@/hooks/useUserRole';
+import { 
+  BookOpen, 
+  TrendingUp, 
+  Award, 
+  Clock,
+  Settings,
+  Users
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Course {
@@ -19,7 +28,8 @@ interface Course {
   duration_minutes: number;
   is_premium: boolean;
   price_fcfa: number;
-  thumbnail_url?: string;
+  thumbnail_url: string;
+  video_url: string;
 }
 
 interface ModernDashboardProps {
@@ -28,84 +38,76 @@ interface ModernDashboardProps {
 
 export const ModernDashboard = ({ user }: ModernDashboardProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Tous');
+  const [loading, setLoading] = useState(true);
+  const [showBackoffice, setShowBackoffice] = useState(false);
+  const { isAdmin, isTeacher, loading: roleLoading } = useUserRole(user);
   const { toast } = useToast();
 
   useEffect(() => {
     loadCourses();
   }, []);
 
+  useEffect(() => {
+    filterCourses();
+  }, [courses, selectedCategory, searchTerm]);
+
   const loadCourses = async () => {
     try {
-      console.log('Loading courses...');
       const { data, error } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading courses:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les cours",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('Courses loaded:', data?.length);
+      if (error) throw error;
       setCourses(data || []);
     } catch (error) {
-      console.error('Exception loading courses:', error);
+      console.error('Error loading courses:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les cours",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const filterCourses = () => {
+    let filtered = [...courses];
+
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(course => course.category === selectedCategory);
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter(course =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredCourses(filtered);
+  };
+
   const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de se déconnecter",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Sign out error:', error);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de se déconnecter",
+        variant: "destructive"
+      });
     }
   };
 
-  // Convert courses to video format for display
-  const videosFromCourses = courses.map(course => ({
-    id: course.id,
-    title: course.title,
-    duration: `${Math.floor(course.duration_minutes / 60)}h ${course.duration_minutes % 60}min`,
-    thumbnail: course.thumbnail_url || '',
-    category: course.category === 'finance' ? 'Éducation financière' : 
-              course.category === 'technology' ? 'Technologie' : 'Général',
-    completed: false,
-    timeAgo: 'il y a 2 jours'
-  }));
-
-  // Filter videos based on search and category
-  const filteredVideos = videosFromCourses.filter(video => {
-    const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'Tous' || video.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  if (loading) {
+  if (showBackoffice && (isAdmin || isTeacher)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des cours...</p>
-        </div>
-      </div>
+      <AdminGuard user={user} requiredRole="teacher">
+        <AdminDashboard user={user} />
+      </AdminGuard>
     );
   }
 
@@ -114,78 +116,144 @@ export const ModernDashboard = ({ user }: ModernDashboardProps) => {
       <Header user={user} onSignOut={handleSignOut} />
       
       <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Admin Access Button */}
+        {!roleLoading && (isAdmin || isTeacher) && (
+          <div className="mb-6">
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
+                      <Settings className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-blue-900">
+                        Accès Administrateur
+                      </h3>
+                      <p className="text-sm text-blue-700">
+                        Gérez les cours, utilisateurs et paramètres de la plateforme
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => setShowBackoffice(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Backoffice
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Bienvenue sur WeLearn 👋
+            Bienvenue sur WeLearn ! 👋
           </h1>
-          <p className="text-lg text-gray-600">
-            Découvrez nos cours d'éducation financière et de technologie
+          <p className="text-gray-600">
+            Découvrez nos cours et développez vos compétences
           </p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Rechercher un cours..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtres
-          </Button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cours Disponibles</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{courses.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Dans toutes les catégories
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Progression</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0%</div>
+              <p className="text-xs text-muted-foreground">
+                Commencez votre apprentissage
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Badges</CardTitle>
+              <Award className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">
+                À débloquer
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Temps d'étude</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0h</div>
+              <p className="text-xs text-muted-foreground">
+                Cette semaine
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Category Tabs */}
-        <CategoryTabs 
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+        {/* Course Categories and Search */}
+        <CategoryTabs
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
         />
 
-        {/* Videos Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredVideos.length > 0 ? (
-            filteredVideos.map((video) => (
-              <VideoCard
-                key={video.id}
-                video={video}
-                onClick={() => {
-                  toast({
-                    title: "Cours sélectionné",
-                    description: `Ouverture du cours: ${video.title}`,
-                  });
-                }}
-              />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-500 text-lg">Aucun cours trouvé</p>
-              <p className="text-gray-400">Essayez de modifier vos critères de recherche</p>
-            </div>
-          )}
-        </div>
-
-        {/* Stats Section */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="text-2xl font-bold text-blue-600">{courses.length}</h3>
-            <p className="text-gray-600">Cours disponibles</p>
+        {/* Course Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+                <div className="bg-gray-200 h-4 rounded mb-2"></div>
+                <div className="bg-gray-200 h-4 rounded w-3/4"></div>
+              </div>
+            ))}
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="text-2xl font-bold text-green-600">0</h3>
-            <p className="text-gray-600">Cours terminés</p>
+        ) : filteredCourses.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Aucun cours trouvé
+            </h3>
+            <p className="text-gray-600">
+              {searchTerm 
+                ? `Aucun cours ne correspond à "${searchTerm}"`
+                : selectedCategory !== 'all' 
+                  ? `Aucun cours dans la catégorie sélectionnée`
+                  : 'Aucun cours disponible pour le moment'
+              }
+            </p>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="text-2xl font-bold text-purple-600">0h</h3>
-            <p className="text-gray-600">Temps d'apprentissage</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourses.map((course) => (
+              <VideoCard key={course.id} course={course} />
+            ))}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
